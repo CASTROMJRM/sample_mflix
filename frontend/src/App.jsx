@@ -3,6 +3,24 @@ import "./App.css";
 
 const API_URL = "http://localhost:4000";
 
+function renderStars(stars) {
+  if (typeof stars !== "number") return "";
+  const fullStars = Math.round(stars);
+  return "★".repeat(fullStars) + "☆".repeat(5 - fullStars);
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("es-ES", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [q, setQ] = useState("");
@@ -10,6 +28,10 @@ export default function App() {
   const [totalPages, setTotalPages] = useState(1);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [movieDetail, setMovieDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState("");
 
   const limit = 12;
 
@@ -29,12 +51,37 @@ export default function App() {
       const data = await res.json();
       setMovies(data.movies);
       setTotalPages(data.totalPages);
-    } catch (e) {
+    } catch {
       setError("No se pudieron cargar los datos. Revisa backend y URI.");
     } finally {
       setCargando(false);
     }
   }
+
+    async function abrirDetalle(movie) {
+    setSelectedMovie(movie);
+    setMovieDetail(null);
+    setDetailError("");
+
+    try {
+      setDetailLoading(true);
+      const res = await fetch(`${API_URL}/api/movies/${movie._id}`);
+      if (!res.ok) throw new Error("No se pudo cargar el detalle");
+      const data = await res.json();
+      setMovieDetail(data);
+    } catch {
+      setDetailError("No se pudo cargar la información completa de esta película.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  function cerrarDetalle() {
+    setSelectedMovie(null);
+    setMovieDetail(null);
+    setDetailError("");
+  }
+
 
   useEffect(() => {
     cargar();
@@ -46,6 +93,8 @@ export default function App() {
     setPage(1);
     setTimeout(cargar, 0);
   }
+
+  const detail = movieDetail || selectedMovie;
 
   return (
     <div className="app-container">
@@ -65,24 +114,26 @@ export default function App() {
           </button>
         </form>
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {error && <div className="error-message">{error}</div>}
       </header>
 
       <main style={{ padding: "0 4vw" }}>
         {cargando ? (
           <div className="loading-message">Cargando películas...</div>
-        ) : movies.length === 0 && !cargando ? (
-          <div className="loading-message" style={{ color: '#888' }}>
+        ) : movies.length === 0 ? (
+          <div className="loading-message" style={{ color: "#888" }}>
             No se encontraron películas
           </div>
         ) : (
           <div className="movies-grid">
             {movies.map((m) => (
-              <div key={m._id} className="movie-card">
+
+             <button
+                key={m._id}
+                className="movie-card"
+                type="button"
+                onClick={() => abrirDetalle(m)}
+              >
                 <div className="movie-poster-container">
                   {m.poster ? (
                     <img
@@ -91,7 +142,7 @@ export default function App() {
                       className="movie-poster"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
-                        e.currentTarget.parentElement.innerHTML = 
+                       e.currentTarget.parentElement.innerHTML =
                           '<div class="poster-placeholder">Sin Imagen</div>';
                       }}
                     />
@@ -111,9 +162,14 @@ export default function App() {
                   </div>
                   <div className="movie-genres">
                     {(m.genres || []).slice(0, 3).join(" • ")}
-                  </div>
+                    {m.ratingInfo?.hasComments && (
+                    <div className="movie-stars" title="Calificación por comentarios">
+                      {renderStars(m.ratingInfo.stars)}
+                    </div>
+                  )}
                 </div>
-              </div>
+                  </div>
+                </button>
             ))}
           </div>
         )}
@@ -140,6 +196,80 @@ export default function App() {
           </button>
         </div>
       </main>
+          {selectedMovie && (
+        <div className="modal-overlay" onClick={cerrarDetalle}>
+          <article className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={cerrarDetalle}>
+              ×
+            </button>
+
+            {detailLoading ? (
+              <p className="loading-message">Cargando detalle...</p>
+            ) : detailError ? (
+              <p className="error-message">{detailError}</p>
+            ) : (
+              detail && (
+                <>
+                  <h2>{detail.title}</h2>
+                  <p className="modal-meta">
+                    {detail.year ?? "—"} • {detail.rated ?? "NR"} • {detail.runtime ?? "—"} min
+                  </p>
+
+                  {detail.ratingInfo?.hasComments ? (
+                    <p className="detail-stars">
+                      {renderStars(detail.ratingInfo.stars)}
+                      <span>
+                        {detail.ratingInfo.commentsCount} comentarios
+                        {detail.ratingInfo.imdbRating
+                          ? ` · IMDb ${detail.ratingInfo.imdbRating}/10`
+                          : ""}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="detail-no-comments">Sin comentarios para mostrar estrellas.</p>
+                  )}
+
+                  <p className="modal-plot">
+                    {detail.fullplot || "Esta película no tiene descripción completa."}
+                  </p>
+
+                  <div className="modal-sections">
+                    <div>
+                      <h4>Directores</h4>
+                      <p>{(detail.directors || []).join(", ") || "No disponible"}</p>
+                    </div>
+                    <div>
+                      <h4>Reparto</h4>
+                      <p>{(detail.cast || []).slice(0, 8).join(", ") || "No disponible"}</p>
+                    </div>
+                    <div>
+                      <h4>Géneros</h4>
+                      <p>{(detail.genres || []).join(" • ") || "No disponible"}</p>
+                    </div>
+                  </div>
+
+                  <section className="comments-section">
+                    <h4>Comentarios recientes</h4>
+                    {!detail.comments?.length ? (
+                      <p className="detail-no-comments">Esta película aún no tiene comentarios.</p>
+                    ) : (
+                      <ul>
+                        {detail.comments.map((comment) => (
+                          <li key={comment._id}>
+                            <strong>{comment.name || comment.email || "Usuario"}</strong>
+                            <span>{formatDate(comment.date)}</span>
+                            <p>{comment.text}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                </>
+              )
+            )}
+          </article>
+        </div>
+      )}
     </div>
   );
 }
