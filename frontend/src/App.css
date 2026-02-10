@@ -1,42 +1,461 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* Reset y variables */
+:root {
+  --netflix-red: #e50914;
+  --dark-bg: #141414;
+  --card-bg: #181818;
+  --card-hover: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #808080;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    sans-serif;
+  line-height: 1.5;
+}
+
+/* Contenedor principal */
+.app-container {
+  background-color: var(--dark-bg);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+/* Header y navegación */
+.app-header {
+  background: linear-gradient(
+    180deg,
+    rgba(20, 20, 20, 0.95) 0%,
+    transparent 100%
+  );
+  padding: 20px 4vw;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.app-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 800;
+  color: var(--netflix-red);
+  margin-bottom: clamp(15px, 3vw, 25px);
+  letter-spacing: 0.5px;
+}
+
+/* Barra de búsqueda RESPONSIVE */
+.search-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: clamp(20px, 4vw, 30px);
+  max-width: 800px;
+}
+
+.search-input {
+  flex: 1;
+  padding: clamp(12px, 2vw, 16px) clamp(15px, 2.5vw, 20px);
+  border: none;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: clamp(14px, 2vw, 16px);
+  transition: all 0.3s ease;
+  min-width: 0; /* Importante para flex en móvil */
+}
+
+.search-input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px var(--netflix-red);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.search-button {
+  padding: clamp(12px, 2vw, 16px) clamp(20px, 3vw, 28px);
+  background-color: var(--netflix-red);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: clamp(14px, 2vw, 16px);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.search-button:hover {
+  background-color: #f40612;
+}
+
+/* Mensajes de estado */
+.error-message {
+  background-color: rgba(229, 9, 20, 0.1);
+  border: 1px solid var(--netflix-red);
+  color: #ff6b6b;
+  padding: clamp(12px, 2vw, 16px);
+  border-radius: 4px;
+  margin-bottom: clamp(15px, 3vw, 20px);
   text-align: center;
+  font-size: clamp(14px, 1.8vw, 16px);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.loading-message {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) 0;
+  color: var(--text-secondary);
+  font-size: clamp(16px, 2.5vw, 20px);
+  letter-spacing: 0.5px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Grid de películas - SUPER RESPONSIVE */
+.movies-grid {
+  display: grid;
+  gap: clamp(12px, 2vw, 20px);
+  margin-bottom: clamp(30px, 5vw, 40px);
+
+  /* Grid auto-responsive */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.movie-card {
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--card-bg);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  cursor: pointer;
+  aspect-ratio: 2/3; /* Mantiene proporción cine */
+}
+
+.movie-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  background-color: var(--card-hover);
+  z-index: 10;
+}
+
+.movie-poster-container {
+  height: 75%;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.movie-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition:
+    transform 0.5s ease,
+    opacity 0.3s ease;
+}
+
+.movie-card:hover .movie-poster {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.poster-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: clamp(12px, 1.5vw, 14px);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 10px;
+}
+
+.movie-info {
+  padding: clamp(12px, 2vw, 16px);
+  height: 25%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.movie-title {
+  font-size: clamp(14px, 1.8vw, 16px);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+.movie-meta {
+  color: var(--text-secondary);
+  font-size: clamp(11px, 1.5vw, 13px);
+  margin-bottom: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.5em;
+}
+
+.meta-separator {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.movie-genres {
+  color: var(--text-muted);
+  font-size: clamp(11px, 1.5vw, 13px);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+/* Paginación RESPONSIVE */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(12px, 3vw, 20px);
+  margin-top: clamp(30px, 5vw, 40px);
+  padding: clamp(15px, 3vw, 20px);
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 24px);
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: clamp(14px, 1.8vw, 16px);
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.pagination-button:hover:not(:disabled) {
+  border-color: var(--netflix-red);
+  background-color: rgba(229, 9, 20, 0.1);
+  transform: translateY(-2px);
+}
+
+.pagination-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+  font-size: clamp(14px, 1.8vw, 16px);
+  text-align: center;
+  min-width: 150px;
+}
+
+/* ====================== */
+/* MEDIA QUERIES DETALLADAS */
+/* ====================== */
+
+/* Pantallas grandes (más de 1400px) */
+@media (min-width: 1400px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
   }
-  to {
-    transform: rotate(360deg);
+
+  .app-header {
+    padding: 25px 60px;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+/* Tablets horizontales (1024px - 1399px) */
+@media (max-width: 1399px) and (min-width: 1024px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
   }
 }
 
-.card {
-  padding: 2em;
+/* Tablets verticales (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 15px;
+  }
+
+  .app-header {
+    padding: 20px 30px;
+  }
+
+  main {
+    padding: 0 30px !important;
+  }
 }
 
-.read-the-docs {
-  color: #888;
+/* Tablets pequeñas y móviles grandes (600px - 767px) */
+@media (max-width: 767px) and (min-width: 600px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .app-header {
+    padding: 15px 20px;
+  }
+
+  main {
+    padding: 0 20px !important;
+  }
+
+  .search-container {
+    flex-direction: column;
+  }
+
+  .search-button {
+    width: 100%;
+  }
+}
+
+/* Móviles (480px - 599px) */
+@media (max-width: 599px) and (min-width: 480px) {
+  .movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .app-header {
+    padding: 12px 15px;
+  }
+
+  main {
+    padding: 0 15px !important;
+  }
+
+  .search-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .movie-title {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+
+  .movie-meta {
+    font-size: 11px;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .pagination-button {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
+/* Móviles pequeños (menos de 480px) */
+@media (max-width: 479px) {
+  .movies-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .app-header {
+    padding: 10px 12px;
+  }
+
+  main {
+    padding: 0 12px !important;
+  }
+
+  .search-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-button {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .movie-card {
+    aspect-ratio: 3/4;
+  }
+
+  .movie-title {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+    min-height: 2.8em;
+  }
+
+  .movie-meta {
+    font-size: 10px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .movie-genres {
+    font-size: 10px;
+    -webkit-line-clamp: 2;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pagination-button {
+    width: 100%;
+    max-width: 180px;
+    min-width: auto;
+  }
+
+  .pagination-info {
+    min-width: auto;
+    order: -1;
+    margin-bottom: 5px;
+  }
+}
+
+/* Móviles muy pequeños (menos de 360px) */
+@media (max-width: 359px) {
+  .movies-grid {
+    grid-template-columns: 1fr;
+    max-width: 250px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .movie-card {
+    aspect-ratio: 2/3;
+  }
+
+  .app-title {
+    font-size: 1.3rem;
+    text-align: center;
+  }
 }
